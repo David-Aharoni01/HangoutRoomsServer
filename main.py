@@ -1,3 +1,4 @@
+import os
 import pathlib
 import uvicorn
 from fastapi import FastAPI
@@ -56,7 +57,6 @@ add_user(conn, user)
 @app.post("/users/check_availability")
 async def check_availability(phone_number: str):
     conn = HelperDB.create_connection("files/users.db")
-    HelperDB.create_users_table(conn)
     users = HelperDB.get_users(conn, phone_number, 'Phone_number')
     conn.close()
     if len(users) > 0:
@@ -69,7 +69,6 @@ async def check_availability(phone_number: str):
 @app.post("/users/signup")
 async def signup(user: User):
     conn = HelperDB.create_connection("files/users.db")
-    HelperDB.create_users_table(conn)
     HelperDB.add_user(conn, tuple(user))
     conn.close()
     print(tuple(user))
@@ -101,5 +100,15 @@ def read_item(directory: str, file_name: str):
         return {"message": str(e)}
 
 
+def create_directory(path: str):
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+
 if __name__ == "__main__":
+    create_directory("files")
+    [create_directory(os.path.join("files/", directory)) for directory in ["images", "videos", "recordings", "profile_pictures"]]
+    conn = HelperDB.create_connection("files/users.db")
+    HelperDB.create_users_table(conn)
+
     uvicorn.run(app, host=ip, port=port)
