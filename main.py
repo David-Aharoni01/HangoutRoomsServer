@@ -15,7 +15,6 @@ import platform
 import HelperDB
 
 ip = "tamir's_server"
-ip_testing = "david.lan"
 testing = platform.node() == "HOME"
 port = 8080
 app = FastAPI()
@@ -124,6 +123,5 @@ if __name__ == "__main__":
     HelperDB.create_users_table(conn)
     conn.close()
     if testing:
-        uvicorn.run(app, host=ip_testing, port=port)
-    else:
-        uvicorn.run(app, host=ip, port=port)
+        ip = "david.lan"
+    uvicorn.run(app, host=ip, port=port)
