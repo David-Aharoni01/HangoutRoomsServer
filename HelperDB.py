@@ -2,12 +2,25 @@ import sqlite3
 from sqlite3 import Error
 
 
+class Users:
+    PHONE_NUMBER = "Phone_number"
+    NAME = "Name"
+    PROFILE_PICTURE = "Profile_picture"
+    PASSWORD_HASH = "Password_hash"
+
+
+def __dict_factory__(cursor, row):
+    d = {}
+    for idx, col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+    return d
+
+
 def create_connection(db_file):
-    """ create a database connection to a SQLite database """
     conn = None
     try:
         conn = sqlite3.connect(db_file)
-        print(sqlite3.version)
+        conn.row_factory = __dict_factory__
     except Error as e:
         print(e)
     finally:

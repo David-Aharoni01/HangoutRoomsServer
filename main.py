@@ -1,5 +1,7 @@
 import os
 import pathlib
+from typing import Union
+
 import uvicorn
 from fastapi import FastAPI
 import base64
@@ -24,14 +26,15 @@ class File(BaseModel):
 class User(BaseModel):
     phone_number: str
     name: str
-    profile_picture: File
+    profile_picture: Union[File, str] = None
     password_hash: str
 
     def __init__(self, **data: Any):
         super().__init__(**data)
-        with open(f"files/profile_pictures/{self.phone_number}.{self.profile_picture.type}", 'xb') as f:
-            f.write(base64.b64decode(self.profile_picture.base_64))
-        self.profile_picture = f"http://{ip}:{port}/files/profile_pictures/{self.phone_number}.{self.profile_picture.type}"
+        if self.profile_picture:
+            with open(f"files/profile_pictures/{self.phone_number}.{self.profile_picture.type}", 'xb') as f:
+                f.write(base64.b64decode(self.profile_picture.base_64))
+            self.profile_picture = f"http://{ip}:{port}/files/profile_pictures/{self.phone_number}.{self.profile_picture.type}"
 
     def __iter__(self):
         yield self.phone_number
@@ -48,13 +51,7 @@ def read_root():
     return {"Status": "Server Online"}
 
 
-''' adding a user:
-user = ('0538319302', 'David', None, hashlib.sha1('david2005'.encode()).hexdigest())
-add_user(conn, user)
-'''
-
-
-@app.post("/users/check_availability")
+@app.put("/users/check_availability")
 async def check_availability(phone_number: str):
     conn = HelperDB.create_connection("files/users.db")
     users = HelperDB.get_users(conn, phone_number, 'Phone_number')
@@ -71,10 +68,25 @@ async def signup(user: User):
     conn = HelperDB.create_connection("files/users.db")
     HelperDB.add_user(conn, tuple(user))
     conn.close()
-    print(tuple(user))
-    return {'message': f'Created new user:\n{user}',
+    return {'message': f'Created new user: {user}',
             'code': 1,
-            'tuple': tuple(user)}
+            'user': user}
+
+
+@app.put("/users/signin")
+async def signin(phone_number: str, password_hash: str):
+    conn = HelperDB.create_connection("files/users.db")
+    existing_user = HelperDB.get_users(conn, phone_number, '*')
+    conn.close()
+    if len(existing_user) == 0:
+        return {'message': f'User with phone number {phone_number} doesnt exist',
+                'code': 0}
+    if password_hash != existing_user[0][HelperDB.Users.PASSWORD_HASH]:
+        return {'message': f'Wrong password',
+                'code': 0}
+    return {'message': f'Phone number and password match',
+            'code': 1,
+            'user': tuple(existing_user)}
 
 
 @app.post("/files/{directory}")
@@ -100,15 +112,12 @@ def read_item(directory: str, file_name: str):
         return {"message": str(e)}
 
 
-def create_directory(path: str):
-    if not os.path.exists(path):
-        os.mkdir(path)
-
-
 if __name__ == "__main__":
-    create_directory("files")
-    [create_directory(os.path.join("files/", directory)) for directory in ["images", "videos", "recordings", "profile_pictures"]]
+    if not os.path.exists("files"):
+        os.mkdir("files")
+    [os.mkdir(os.path.join("files/", directory)) for directory in
+     ["images", "videos", "recordings", "profile_pictures"] if not os.path.exists(os.path.join("files/", directory))]
     conn = HelperDB.create_connection("files/users.db")
     HelperDB.create_users_table(conn)
-
+    conn.close()
     uvicorn.run(app, host=ip, port=port)
