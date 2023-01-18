@@ -10,10 +10,13 @@ import time
 import hashlib
 from fastapi.responses import Response
 from pydantic.annotated_types import Any
+import platform
 
 import HelperDB
 
-ip = "david.lan"
+ip = "tamir's_server"
+ip_testing = "david.lan"
+testing = platform.node() == "HOME"
 port = 8080
 app = FastAPI()
 
@@ -120,4 +123,7 @@ if __name__ == "__main__":
     conn = HelperDB.create_connection("files/users.db")
     HelperDB.create_users_table(conn)
     conn.close()
-    uvicorn.run(app, host=ip, port=port)
+    if testing:
+        uvicorn.run(app, host=ip_testing, port=port)
+    else:
+        uvicorn.run(app, host=ip, port=port)
