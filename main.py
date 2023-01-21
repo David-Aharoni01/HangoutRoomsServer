@@ -15,6 +15,7 @@ import platform
 import HelperDB
 
 ip = "tamir's_server"
+ip_testing = "david.lan"
 testing = platform.node() == "HOME"
 port = 8080
 app = FastAPI()
@@ -60,9 +61,9 @@ async def check_availability(phone_number: str):
     conn.close()
     if len(users) > 0:
         return {'message': f'User with phone number {phone_number} already exists',
-                'code': 0}
+                'result': False}
     return {'message': f'Phone number {phone_number} available',
-            'code': 1}
+            'result': True}
 
 
 @app.post("/users/signup")
@@ -71,7 +72,7 @@ async def signup(user: User):
     HelperDB.add_user(conn, tuple(user))
     conn.close()
     return {'message': f'Created new user: {user}',
-            'code': 1,
+            'result': True,
             'user': user}
 
 
@@ -82,13 +83,13 @@ async def signin(phone_number: str, password_hash: str):
     conn.close()
     if len(existing_user) == 0:
         return {'message': f'User with phone number {phone_number} doesnt exist',
-                'code': 0}
+                'result': False}
     if password_hash != existing_user[0][HelperDB.Users.PASSWORD_HASH]:
         return {'message': f'Wrong password',
-                'code': 0}
+                'result': False}
     return {'message': f'Phone number and password match',
-            'code': 1,
-            'user': tuple(existing_user)}
+            'result': True,
+            'user': existing_user}
 
 
 @app.post("/files/{directory}")
@@ -123,5 +124,5 @@ if __name__ == "__main__":
     HelperDB.create_users_table(conn)
     conn.close()
     if testing:
-        ip = "david.lan"
+        ip = ip_testing
     uvicorn.run(app, host=ip, port=port)
