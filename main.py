@@ -14,6 +14,8 @@ import platform
 
 import HelperDB
 
+ip = "tamir's_server"
+ip_testing = "david.lan"
 testing = platform.node() == "HOME"
 port = 8080
 app = FastAPI()
@@ -35,7 +37,7 @@ class User(BaseModel):
         if self.profile_picture:
             with open(f"files/profile_pictures/{self.phone_number}.{self.profile_picture.type}", 'xb') as f:
                 f.write(base64.b64decode(self.profile_picture.base_64))
-            self.profile_picture = f"/files/profile_pictures/{self.phone_number}.{self.profile_picture.type}"
+            self.profile_picture = f"http://{ip}:{port}/files/profile_pictures/{self.phone_number}.{self.profile_picture.type}"
 
     def __iter__(self):
         yield self.phone_number
@@ -99,7 +101,7 @@ async def upload(directory: str, file: File):
     except Exception as e:
         return {"message": str(e)}
     return {"message": f"Successfully uploaded file",
-            "url": f"/files/{directory}/{file_name}"}
+            "url": f"http://{ip}:{port}/files/{directory}/{file_name}"}
 
 
 @app.get("/files/{directory}/{file_name}")
@@ -121,4 +123,6 @@ if __name__ == "__main__":
     conn = HelperDB.create_connection("files/users.db")
     HelperDB.create_users_table(conn)
     conn.close()
-    uvicorn.run(app, host='0.0.0.0', port=port)
+    if testing:
+        ip = ip_testing
+    uvicorn.run(app, host="0.0.0.0", port=port)
