@@ -125,4 +125,4 @@ if __name__ == "__main__":
     conn.close()
     if testing:
         ip = ip_testing
-    uvicorn.run(app, host=ip, port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port)
